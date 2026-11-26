@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Planner</title>
+<style>
+:root{
+  --bg:#f6f5f1; --panel:#ffffff; --ink:#1f2328; --muted:#6a6f76; --line:#e3e1da;
+  --accent:#2f6f5e; --accent-ink:#fff; --warn:#b3541e; --warn-bg:#fbeee5;
+  --hi:#c0392b; --med:#c58a00; --lo:#5a7d9a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#16181b; --panel:#1f2226; --ink:#e7e7e4; --muted:#9aa0a6; --line:#33373c;
+    --accent:#5fb39b; --accent-ink:#0f1a17; --warn:#f0a06b; --warn-bg:#3a2a20; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:20px 16px 8px;max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between}
+h1{margin:0;font-size:24px}
+header p{margin:2px 0 0;color:var(--muted)}
+main{max-width:1200px;margin:0 auto;padding:8px 16px 40px;display:grid;grid-template-columns:340px 1fr;gap:16px}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.panel h2{margin:0 0 10px;font-size:16px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%;margin-top:3px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+button.small{padding:2px 8px;font-size:13px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.task{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.task:first-of-type{border-top:none}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.task .info{flex:1;min-width:0}
+.task .name{font-weight:600}
+.task .meta{font-size:12px;color:var(--muted)}
+.pri{font-size:11px;font-weight:700;padding:1px 6px;border-radius:10px;color:#fff}
+.p1{background:var(--hi)}.p2{background:var(--med)}.p3{background:var(--lo)}
+.daychecks{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.daychecks label{display:flex;align-items:center;gap:3px;margin:0;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.daychecks input{width:auto;margin:0}
+.cal-wrap{overflow-x:auto}
+.cal{display:grid;grid-template-columns:48px repeat(7,minmax(110px,1fr));min-width:820px}
+.cal .head{font-weight:600;text-align:center;padding:6px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.cal .head small{display:block;color:var(--muted);font-weight:400}
+.col{position:relative;border-left:1px solid var(--line)}
+.hours{position:relative}
+.hours div{position:absolute;right:6px;font-size:11px;color:var(--muted);transform:translateY(-50%)}
+.gridline{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}
+.blk{position:absolute;left:3px;right:3px;border-radius:6px;padding:2px 5px;font-size:12px;overflow:hidden;color:#fff;line-height:1.25;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.blk b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk.fixed{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.12) 0 6px,transparent 6px 12px)}
+.warnbox{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.warnbox ul{margin:4px 0 0;padding-left:18px}
+.agenda{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px}
+.agenda h3{margin:0 0 6px;font-size:14px}
+.agenda ol{margin:0;padding:0;list-style:none;font-size:13px}
+.agenda li{display:flex;gap:6px;padding:2px 0}
+.agenda li span:first-child{color:var(--muted);min-width:92px;font-variant-numeric:tabular-nums}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);width:min(440px,calc(100vw - 32px));padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+.hint{font-size:12px;color:var(--muted);margin:-4px 0 8px}
+.right{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media print{
+  header .btns,.left,button{display:none!important}
+  main{grid-template-columns:1fr}
+  body{background:#fff;color:#000}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Weekly Planner</h1>
+    <p>Enter your week once. The schedule builds itself.</p>
+  </div>
+  <div class="btns">
+    <button onclick="exportJSON()">Save to file</button>
+    <button onclick="document.getElementById('importFile').click()">Load from file</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(this)">
+    <button onclick="window.print()">Print</button>
+  </div>
+</header>
+
+<main>
+  <div class="left" style="display:flex;flex-direction:column;gap:16px">
+    <section class="panel">
+      <h2>My day</h2>
+      <label>Week starting (Monday)<input type="date" id="weekStart"></label>
+      <div class="row">
+        <label>Wake up<input type="time" id="wake"></label>
+        <label>Bedtime<input type="time" id="bed"></label>
+      </div>
+      <label>Break between tasks (minutes)<input type="number" id="buffer" min="0" max="60" step="5"></label>
+    </section>
+
+    <section class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h2 style="margin:0">Things to do</h2>
+        <button class="primary small" onclick="openEditor()">+ Add</button>
+      </div>
+      <div id="taskList"></div>
+      <div class="btns" style="margin-top:10px">
+        <button class="small" onclick="resetSample()">Load example week</button>
+        <button class="small" onclick="clearAll()">Clear all</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="right">
+    <section class="panel">
+      <div id="warnings"></div>
+      <div class="cal-wrap"><div class="cal" id="cal"></div></div>
+    </section>
+    <section class="panel">
+      <h2>Day by day</h2>
+      <div class="agenda" id="agenda"></div>
+    </section>
+  </div>
+</main>
+
+<dialog id="editor">
+  <form method="dialog" id="editForm">
+    <h2 id="editTitle" style="margin:0 0 12px;font-size:18px">Add task</h2>
+    <label>Name<input id="f_name" required placeholder="e.g. Walk the dog"></label>
+    <label>Kind
+      <select id="f_type" onchange="syncFields()">
+        <option value="fixed">Fixed time (school, practice, dinner)</option>
+        <option value="recurring">Daily chore (same days every week)</option>
+        <option value="flexible">Flexible (X times a week, any day)</option>
+      </select>
+    </label>
+    <div class="hint" id="typeHint"></div>
+    <label>Days<div class="daychecks" id="f_days"></div></label>
+
+    <div id="fixedFields" class="row">
+      <label>Starts<input type="time" id="f_start"></label>
+      <label>Ends<input type="time" id="f_end"></label>
+    </div>
+
+    <div id="flexFields">
+      <div class="row">
+        <label>Minutes each time<input type="number" id="f_dur" min="5" step="5"></label>
+        <label id="perDayL">Times per day<input type="number" id="f_perDay" min="1" max="6"></label>
+        <label id="perWeekL">Times per week<input type="number" id="f_perWeek" min="1" max="7"></label>
+      </div>
+      <div class="row">
+        <label>Best time of day
+          <select id="f_window">
+            <option value="any">Any time</option>
+            <option value="morning">Morning (before 12)</option>
+            <option value="afternoon">Afternoon (12–5)</option>
+            <option value="evening">Evening (after 5)</option>
+          </select>
+        </label>
+        <label>Priority
+          <select id="f_pri">
+            <option value="1">High – must happen</option>
+            <option value="2">Medium</option>
+            <option value="3">Low – if there's time</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <label>Color<input type="color" id="f_color" style="height:36px;padding:2px"></label>
+    <div class="btns" style="justify-content:space-between;margin-top:8px">
+      <button type="button" id="delBtn" onclick="deleteTask()" style="color:var(--hi)">Delete</button>
+      <div class="btns">
+        <button type="button" onclick="editor.close()">Cancel</button>
+        <button type="submit" class="primary" onclick="return saveTask(event)">Save</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const WINDOWS = { morning:[0,12*60], afternoon:[12*60,17*60], evening:[17*60,24*60], any:[0,24*60] };
+const PRI_NAME = {1:'High',2:'Med',3:'Low'};
+const STORE = 'weekly-planner-v1';
+const PALETTE = ['#2f6f5e','#c0392b','#6c5ce7','#d35400','#2874a6','#8e44ad','#16a085','#b7950b'];
+
+const toMin = t => { const [h,m] = (t||'0:0').split(':').map(Number); return h*60+m; };
+const fmt = m => { let h = Math.floor(m/60), mm = String(m%60).padStart(2,'0'); const ap = h>=12?'pm':'am'; h = h%12||12; return `${h}:${mm}${ap}`; };
+const uid = () => Math.random().toString(36).slice(2,9);
+
+function thisMonday(){
+  const d = new Date(); const dow = (d.getDay()+6)%7; d.setDate(d.getDate()-dow);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function sampleState(){
+  return {
+    settings:{ wake:'06:30', bed:'22:30', buffer:10, weekStart:thisMonday() },
+    tasks:[
+      {id:uid(),name:'School',type:'fixed',days:[0,1,2,3,4],start:'07:45',end:'14:45',color:'#5a7d9a'},
+      {id:uid(),name:'Dinner',type:'fixed',days:[0,1,2,3,4,5,6],start:'18:30',end:'19:15',color:'#8e44ad'},
+      {id:uid(),name:'Walk the dog',type:'recurring',days:[0,1,2,3,4,5,6],duration:30,perDay:2,window:'any',priority:1,color:'#d35400'},
+      {id:uid(),name:'Homework',type:'recurring',days:[0,1,2,3,6],duration:90,perDay:1,window:'afternoon',priority:1,color:'#c0392b'},
+      {id:uid(),name:'Gym',type:'flexible',days:[0,1,2,3,4,5,6],duration:60,perWeek:3,window:'afternoon',priority:2,color:'#2f6f5e'},
+      {id:uid(),name:'Read for fun',type:'flexible',days:[0,1,2,3,4,5,6],duration:30,perWeek:4,window:'evening',priority:3,color:'#16a085'},
+    ]
+  };
+}
+
+let state;
+try { state = JSON.parse(localStorage.getItem(STORE)); } catch(e) {}
+if (!state || !state.tasks) state = sampleState();
+
+function persist(){ try { localStorage.setItem(STORE, JSON.stringify(state)); } catch(e) {} }
+
+/* ---------------- Scheduler ---------------- */
+function buildSchedule(){
+  const s = state.settings;
+  const wake = toMin(s.wake), bed = toMin(s.bed), buf = Math.max(0, +s.buffer||0);
+  const days = DAYS.map(() => []);
+  const unfit = [], warnings = [];
+
+  // 1. Fixed events block time no matter what.
+  for (const t of state.tasks.filter(t => t.type==='fixed')) {
+    const st = toMin(t.start), en = toMin(t.end);
+    if (en <= st) { warnings.push(`"${t.name}" ends before it starts.`); continue; }
+    for (const d of t.days) {
+      const clash = days[d].find(b => st < b.end && en > b.start);
+      if (clash) warnings.push(`${DAYS[d]}: "${t.name}" overlaps "${clash.task.name}".`);
+      days[d].push({task:t, start:st, end:en, fixed:true});
+    }
+  }
+
+  // Find the earliest free slot of `dur` minutes inside [lo, hi], keeping a break around other items.
+  function findSlot(d, dur, lo, hi){
+    lo = Math.max(lo, wake); hi = Math.min(hi, bed);
+    const busy = days[d];
+    const cands = [lo, ...busy.map(b => b.end + buf)].filter(c => c >= lo).sort((a,b)=>a-b);
+    for (const c of cands) {
+      if (c + dur > hi) break;
+      if (busy.every(b => c + dur + buf <= b.start || c >= b.end + buf)) return c;
+    }
+    return null;
+  }
+  function freeMinutes(d, lo, hi){
+    lo = Math.max(lo, wake); hi = Math.min(hi, bed);
+    let used = 0;
+    for (const b of days[d]) used += Math.max(0, Math.min(hi,b.end) - Math.max(lo,b.start));
+    return Math.max(0, hi - lo - used);
+  }
+  const place = (d, t, start) => days[d].push({task:t, start, end:start + +t.duration});
+
+  // 2. Everything else, most important first. Daily chores go before flexible tasks of equal priority.
+  const order = {recurring:0, flexible:1};
+  const flexible = state.tasks.filter(t => t.type!=='fixed')
+    .sort((a,b) => (a.priority-b.priority) || (order[a.type]-order[b.type]));
+
+  for (const t of flexible) {
+    const dur = +t.duration || 30;
+    const [wlo, whi] = WINDOWS[t.window] || WINDOWS.any;
+
+    if (t.type === 'recurring') {
+      const n = Math.max(1, +t.perDay || 1);
+      for (const d of t.days) {
+        for (let i = 0; i < n; i++) {
+          // Spread repeats across the day: split the allowed window into n equal parts.
+          const lo = Math.max(wlo, wake), hi = Math.min(whi, bed), seg = (hi - lo) / n;
+          const segLo = Math.round(lo + i*seg), segHi = Math.round(lo + (i+1)*seg);
+          let st = findSlot(d, dur, segLo, segHi);
+          if (st === null) st = findSlot(d, dur, lo, hi);
+          if (st === null && t.window !== 'any') st = findSlot(d, dur, wake, bed);
+          if (st === null) unfit.push({task:t, day:d, why:'no free time that day'});
+          else place(d, t, st);
+        }
+      }
+    } else {
+      // Flexible: pick the days with the most free time, avoid back-to-back days when possible.
+      let want = Math.max(1, +t.perWeek || 1);
+      if (want > t.days.length) {
+        unfit.push({task:t, day:null, why:`asked for ${want}× but only ${t.days.length} day(s) allowed`});
+        want = t.days.length;
+      }
+      const used = new Set();
+      for (let k = 0; k < want; k++) {
+        const ranked = t.days.filter(d => !used.has(d)).map(d => {
+          const adj = used.has(d-1) || used.has(d+1);
+          return {d, score: freeMinutes(d, wlo, whi) - (adj ? 600 : 0)};
+        }).sort((a,b) => b.score - a.score);
+        let ok = false;
+        for (const {d} of ranked) {
+          let st = findSlot(d, dur, wlo, whi);
+          if (st === null && t.window !== 'any') st = null; // keep preferred window for flexible tasks first
+          if (st !== null) { place(d, t, st); used.add(d); ok = true; break; }
+        }
+        if (!ok) for (const {d} of ranked) { // fall back to any time of day
+          const st = findSlot(d, dur, wake, bed);
+          if (st !== null) { place(d, t, st); used.add(d); ok = true; break; }
+        }
+        if (!ok) unfit.push({task:t, day:null, why:'no room left this week'});
+      }
+    }
+  }
+  days.forEach(list => list.sort((a,b) => a.start - b.start));
+  return {days, unfit, warnings, wake, bed};
+}
+
+/* ---------------- Rendering ---------------- */
+function render(){
+  const s = state.settings;
+  ['wake','bed','buffer','weekStart'].forEach(k => { const el = document.getElementById(k); if (el.value !== String(s[k])) el.value = s[k]; });
+  renderTasks();
+  const sch = buildSchedule();
+  renderWarnings(sch);
+  renderCalendar(sch);
+  renderAgenda(sch);
+  persist();
+}
+
+function describe(t){
+  const dayStr = t.days.length===7 ? 'Every day' : (t.days.join()==='0,1,2,3,4' ? 'Weekdays' : t.days.map(d=>DAYS[d]).join(' '));
+  if (t.type==='fixed') return `${dayStr} · ${fmt(toMin(t.start))}–${fmt(toMin(t.end))}`;
+  const w = t.window==='any' ? '' : ` · ${t.window}`;
+  if (t.type==='recurring') return `${dayStr} · ${t.perDay>1?t.perDay+'× ':''}${t.duration} min${w}`;
+  return `${t.perWeek}× a week · ${t.duration} min${w}`;
+}
+
+function renderTasks(){
+  const el = document.getElementById('taskList');
+  if (!state.tasks.length) { el.innerHTML = '<p class="hint" style="margin:6px 0">Nothing yet. Click “+ Add”.</p>'; return; }
+  el.innerHTML = '';
+  for (const t of state.tasks) {
+    const div = document.createElement('div'); div.className = 'task';
+    const pri = t.type==='fixed' ? '' : `<span class="pri p${t.priority}">${PRI_NAME[t.priority]}</span>`;
+    div.innerHTML = `<span class="dot" style="background:${t.color}"></span>
+      <div class="info"><div class="name"></div><div class="meta">${describe(t)}</div></div>${pri}
+      <button class="small">Edit</button>`;
+    div.querySelector('.name').textContent = t.name;
+    div.querySelector('button').onclick = () => openEditor(t.id);
+    el.appendChild(div);
+  }
+}
+
+function renderWarnings({unfit, warnings}){
+  const el = document.getElementById('warnings');
+  const items = [...warnings];
+  const counts = new Map();
+  for (const u of unfit) {
+    const key = `${u.day===null?'':DAYS[u.day]+': '}"${u.task.name}" didn't fit (${u.why})`;
+    counts.set(key, (counts.get(key)||0) + 1);
+  }
+  for (const [k, n] of counts) items.push(n > 1 ? `${k} — ${n} times.` : `${k}.`);
+  if (!items.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="warnbox"><b>Heads up — ${items.length>1 ? items.length+' things need' : '1 thing needs'} attention</b><ul></ul></div>`;
+  const ul = el.querySelector('ul');
+  items.forEach(txt => { const li = document.createElement('li'); li.textContent = txt; ul.appendChild(li); });
+}
+
+function dateFor(i){
+  const ws = state.settings.weekStart; if (!ws) return '';
+  const d = new Date(ws + 'T12:00'); d.setDate(d.getDate()+i);
+  return d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+
+function renderCalendar({days, wake, bed}){
+  const cal = document.getElementById('cal');
+  const startH = Math.floor(wake/60), endH = Math.ceil(bed/60);
+  const PX = 0.9, top0 = startH*60, height = (endH*60 - top0)*PX;
+  let html = '<div></div>' + DAYS.map((d,i) => `<div class="head">${d}<small>${dateFor(i)}</small></div>`).join('');
+  let hours = '';
+  let lines = '';
+  for (let h = startH; h <= endH; h++) {
+    const y = (h*60 - top0)*PX;
+    hours += `<div style="top:${y}px">${fmt(h*60).replace(':00','')}</div>`;
+    lines += `<div class="gridline" style="top:${y}px"></div>`;
+  }
+  html += `<div class="hours" style="height:${height}px">${hours}</div>`;
+  days.forEach((list, di) => {
+    let blocks = '';
+    for (const b of list) {
+      const y = (b.start - top0)*PX, h = Math.max(14, (b.end - b.start)*PX - 1);
+      blocks += `<div class="blk${b.fixed?' fixed':''}" style="top:${y}px;height:${h}px;background-color:${b.task.color}" title="${esc(b.task.name)} ${fmt(b.start)}–${fmt(b.end)}">
+        <b>${esc(b.task.name)}</b>${h>28?`${fmt(b.start)}–${fmt(b.end)}`:''}</div>`;
+    }
+    html += `<div class="col" style="height:${height}px">${lines}${blocks}</div>`;
+  });
+  cal.innerHTML = html;
+}
+
+function renderAgenda({days}){
+  document.getElementById('agenda').innerHTML = days.map((list, i) => `
+    <div><h3>${DAYS[i]} <span style="color:var(--muted);font-weight:400">${dateFor(i)}</span></h3>
+    <ol>${list.length ? list.map(b => `<li><span>${fmt(b.start)}–${fmt(b.end)}</span><span><span class="dot" style="display:inline-block;background:${b.task.color}"></span> ${esc(b.task.name)}</span></li>`).join('') : '<li class="hint">Free day</li>'}</ol></div>`).join('');
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------- Editor ---------------- */
+const editor = document.getElementById('editor');
+let editingId = null;
+const $ = id => document.getElementById(id);
+$('f_days').innerHTML = DAYS.map((d,i) => `<label><input type="checkbox" value="${i}">${d}</label>`).join('');
+
+function syncFields(){
+  const type = $('f_type').value;
+  $('fixedFields').style.display = type==='fixed' ? '' : 'none';
+  $('flexFields').style.display = type==='fixed' ? 'none' : '';
+  $('perDayL').style.display = type==='recurring' ? '' : 'none';
+  $('perWeekL').style.display = type==='flexible' ? '' : 'none';
+  $('typeHint').textContent = {
+    fixed:'Happens at the same time on the days you pick. Everything else is planned around it.',
+    recurring:'Happens on every day you pick. The planner chooses the time.',
+    flexible:'Needs to happen a few times a week. The planner picks the best days and times from the days you allow.'
+  }[type];
+}
+
+function openEditor(id){
+  editingId = id || null;
+  const t = state.tasks.find(x => x.id===id) || {name:'',type:'recurring',days:[0,1,2,3,4,5,6],start:'16:00',end:'17:00',duration:30,perDay:1,perWeek:3,window:'any',priority:2,color:PALETTE[state.tasks.length % PALETTE.length]};
+  $('editTitle').textContent = id ? 'Edit task' : 'Add task';
+  $('delBtn').style.visibility = id ? 'visible' : 'hidden';
+  $('f_name').value = t.name; $('f_type').value = t.type;
+  $('f_days').querySelectorAll('input').forEach(c => c.checked = t.days.includes(+c.value));
+  $('f_start').value = t.start||'16:00'; $('f_end').value = t.end||'17:00';
+  $('f_dur').value = t.duration||30; $('f_perDay').value = t.perDay||1; $('f_perWeek').value = t.perWeek||3;
+  $('f_window').value = t.window||'any'; $('f_pri').value = t.priority||2; $('f_color').value = t.color;
+  syncFields(); editor.showModal(); $('f_name').focus();
+}
+
+function saveTask(e){
+  e.preventDefault();
+  const name = $('f_name').value.trim();
+  const days = [...$('f_days').querySelectorAll('input:checked')].map(c => +c.value);
+  if (!name) { $('f_name').focus(); return false; }
+  if (!days.length) { alert('Pick at least one day.'); return false; }
+  const type = $('f_type').value;
+  if (type==='fixed' && toMin($('f_end').value) <= toMin($('f_start').value)) { alert('End time must be after start time.'); return false; }
+  const t = { id: editingId || uid(), name, type, days, color:$('f_color').value };
+  if (type==='fixed') { t.start = $('f_start').value; t.end = $('f_end').value; }
+  else {
+    t.duration = Math.max(5, +$('f_dur').value || 30); t.window = $('f_window').value; t.priority = +$('f_pri').value;
+    if (type==='recurring') t.perDay = Math.max(1, +$('f_perDay').value || 1);
+    else t.perWeek = Math.max(1, +$('f_perWeek').value || 1);
+  }
+  const i = state.tasks.findIndex(x => x.id===t.id);
+  if (i >= 0) state.tasks[i] = t; else state.tasks.push(t);
+  editor.close(); render(); return false;
+}
+
+function deleteTask(){
+  if (!editingId || !confirm('Delete this task?')) return;
+  state.tasks = state.tasks.filter(t => t.id !== editingId);
+  editor.close(); render();
+}
+
+/* ---------------- Settings / files ---------------- */
+['wake','bed','buffer','weekStart'].forEach(k => $(k).addEventListener('change', e => {
+  state.settings[k] = k==='buffer' ? +e.target.value : e.target.value; render();
+}));
+
+function resetSample(){ if (confirm('Replace your tasks with the example week?')) { state = sampleState(); render(); } }
+function clearAll(){ if (confirm('Remove all tasks?')) { state.tasks = []; render(); } }
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `week-${state.settings.weekStart||'plan'}.json`; a.click(); URL.revokeObjectURL(a.href);
+}
+function importJSON(input){
+  const f = input.files[0]; if (!f) return;
+  f.text().then(txt => {
+    try { const s = JSON.parse(txt); if (!s.tasks || !s.settings) throw 0; state = s; render(); }
+    catch { alert("That file doesn't look like a saved week."); }
+    input.value = '';
+  });
+}
+
+render();
+</script>
+</body>
+</html>
